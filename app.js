@@ -1,8 +1,14 @@
 // -----------------------------------------------------
+// CLOUDFLARE WORKER
+// -----------------------------------------------------
+
+const WORKER_URL =
+  "https://hospital-distance-api.christopherrobinsullivan.workers.dev";
+
+
+// -----------------------------------------------------
 // HOSPITAL LIST
 // -----------------------------------------------------
-// Coordinates are examples.
-// You can add, remove, or modify hospitals later.
 
 const hospitals = [
   {
@@ -112,18 +118,35 @@ function getLocation() {
 // SUCCESSFUL GPS LOCATION
 // -----------------------------------------------------
 
-function locationSuccess(position) {
+async function locationSuccess(position) {
 
   const userLat = position.coords.latitude;
   const userLon = position.coords.longitude;
   const accuracy = position.coords.accuracy;
 
-  statusElement.textContent = "Location acquired.";
+  statusElement.textContent =
+    "Location acquired. Calculating road distances...";
 
   accuracyElement.textContent =
     `GPS accuracy approximately ±${Math.round(accuracy)} metres`;
 
-  calculateDistances(userLat, userLon);
+  try {
+
+    await calculateRoadDistances(userLat, userLon);
+
+    statusElement.textContent =
+      "Road distances calculated.";
+
+  } catch (error) {
+
+    console.error(error);
+
+    statusElement.textContent =
+      "Road distance unavailable. Showing straight-line distance instead.";
+
+    displayStraightLineFallback(userLat, userLon);
+
+  }
 
   locationButton.disabled = false;
   locationButton.textContent = "Refresh Location";
@@ -161,79 +184,125 @@ function locationError(error) {
 
 
 // -----------------------------------------------------
-// CALCULATE DISTANCE TO EVERY HOSPITAL
+// CALCULATE ROAD DISTANCES
 // -----------------------------------------------------
 
-function calculateDistances(userLat, userLon) {
+async function calculateRoadDistances(userLat, userLon) {
 
-  const results = hospitals.map(hospital => {
+  // First calculate straight-line distance to every hospital.
+  // This is free and happens entirely on the phone.
 
-    const distance = haversineDistance(
-      userLat,
-      userLon,
-      hospital.lat,
-      hospital.lon
+  const shortlisted = hospitals
+    .map(hospital => {
+
+      const straightLineDistance = haversineDistance(
+        userLat,
+        userLon,
+        hospital.lat,
+        hospital.lon
+      );
+
+      return {
+        ...hospital,
+        straightLineDistance
+      };
+
+    })
+
+    // Sort geographically nearest first
+    .sort(
+      (a, b) =>
+        a.straightLineDistance - b.straightLineDistance
+    )
+
+    // Only send the nearest 3 to Google
+    .slice(0, 3);
+
+
+  // Send current location + 3 destinations to Cloudflare
+
+  const response = await fetch(WORKER_URL, {
+
+    method: "POST",
+
+    headers: {
+      "Content-Type": "application/json"
+    },
+
+    body: JSON.stringify({
+
+      origin: {
+        lat: userLat,
+        lon: userLon
+      },
+
+      destinations: shortlisted.map(hospital => ({
+        lat: hospital.lat,
+        lon: hospital.lon
+      }))
+
+    })
+
+  });
+
+
+  if (!response.ok) {
+    throw new Error(
+      `Worker returned ${response.status}`
     );
+  }
+
+
+  const data = await response.json();
+
+
+  if (
+    !data.results ||
+    !Array.isArray(data.results) ||
+    data.results.length === 0
+  ) {
+    throw new Error(
+      "No road distance results returned."
+    );
+  }
+
+
+  // Match Google's results back to each hospital
+
+  const roadResults = data.results.map(route => {
+
+    const hospital =
+      shortlisted[route.destinationIndex];
 
     return {
       ...hospital,
-      distance: distance
+
+      roadDistanceKm:
+        route.distanceMeters / 1000,
+
+      duration:
+        route.duration
     };
 
   });
 
 
-  // Sort nearest to furthest
-  results.sort((a, b) => a.distance - b.distance);
+  // Sort by actual road distance
+  roadResults.sort(
+    (a, b) =>
+      a.roadDistanceKm - b.roadDistanceKm
+  );
 
 
-  // Display the five nearest hospitals
-  displayResults(results.slice(0, 5));
+  displayRoadResults(roadResults);
 }
 
 
 // -----------------------------------------------------
-// HAVERSINE DISTANCE FORMULA
+// DISPLAY ROAD DISTANCE RESULTS
 // -----------------------------------------------------
 
-function haversineDistance(lat1, lon1, lat2, lon2) {
-
-  const earthRadiusKm = 6371;
-
-  const dLat = degreesToRadians(lat2 - lat1);
-  const dLon = degreesToRadians(lon2 - lon1);
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(degreesToRadians(lat1)) *
-    Math.cos(degreesToRadians(lat2)) *
-    Math.sin(dLon / 2) *
-    Math.sin(dLon / 2);
-
-  const c =
-    2 * Math.atan2(
-      Math.sqrt(a),
-      Math.sqrt(1 - a)
-    );
-
-  return earthRadiusKm * c;
-}
-
-
-// -----------------------------------------------------
-// CONVERT DEGREES TO RADIANS
-// -----------------------------------------------------
-
-function degreesToRadians(degrees) {
-  return degrees * (Math.PI / 180);
-}
-
-
-// -----------------------------------------------------
-// DISPLAY RESULTS
-// -----------------------------------------------------
-
-function displayResults(results) {
+function displayRoadResults(results) {
 
   resultsElement.innerHTML = "";
 
@@ -254,12 +323,140 @@ function displayResults(results) {
       </div>
 
       <div class="hospital-distance">
-        ${hospital.distance.toFixed(1)}
-        <span>km</span>
+        ${hospital.roadDistanceKm.toFixed(1)}
+        <span>km by road</span>
       </div>
     `;
 
-    resultsElement.appendChild(hospitalElement);
+    resultsElement.appendChild(
+      hospitalElement
+    );
 
   });
+
+}
+
+
+// -----------------------------------------------------
+// STRAIGHT-LINE FALLBACK
+// -----------------------------------------------------
+
+function displayStraightLineFallback(
+  userLat,
+  userLon
+) {
+
+  const results = hospitals
+    .map(hospital => {
+
+      const distance =
+        haversineDistance(
+          userLat,
+          userLon,
+          hospital.lat,
+          hospital.lon
+        );
+
+      return {
+        ...hospital,
+        distance
+      };
+
+    })
+
+    .sort(
+      (a, b) =>
+        a.distance - b.distance
+    )
+
+    .slice(0, 3);
+
+
+  resultsElement.innerHTML = "";
+
+
+  results.forEach((hospital, index) => {
+
+    const hospitalElement =
+      document.createElement("div");
+
+    hospitalElement.className = "hospital";
+
+    hospitalElement.innerHTML = `
+      <div class="hospital-number">
+        ${index + 1}
+      </div>
+
+      <div class="hospital-name">
+        ${hospital.name}
+      </div>
+
+      <div class="hospital-distance">
+        ${hospital.distance.toFixed(1)}
+        <span>km straight-line</span>
+      </div>
+    `;
+
+    resultsElement.appendChild(
+      hospitalElement
+    );
+
+  });
+
+}
+
+
+// -----------------------------------------------------
+// HAVERSINE DISTANCE
+// -----------------------------------------------------
+
+function haversineDistance(
+  lat1,
+  lon1,
+  lat2,
+  lon2
+) {
+
+  const earthRadiusKm = 6371;
+
+  const dLat =
+    degreesToRadians(lat2 - lat1);
+
+  const dLon =
+    degreesToRadians(lon2 - lon1);
+
+  const a =
+    Math.sin(dLat / 2) *
+    Math.sin(dLat / 2) +
+
+    Math.cos(
+      degreesToRadians(lat1)
+    ) *
+
+    Math.cos(
+      degreesToRadians(lat2)
+    ) *
+
+    Math.sin(dLon / 2) *
+    Math.sin(dLon / 2);
+
+
+  const c =
+    2 *
+    Math.atan2(
+      Math.sqrt(a),
+      Math.sqrt(1 - a)
+    );
+
+
+  return earthRadiusKm * c;
+}
+
+
+// -----------------------------------------------------
+// CONVERT DEGREES TO RADIANS
+// -----------------------------------------------------
+
+function degreesToRadians(degrees) {
+  return degrees * (Math.PI / 180);
 }

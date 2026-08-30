@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <title>Hospital Distance</title>
+
+  <link rel="manifest" href="manifest.json" />
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #f4f6f8;
+      color: #222;
+    }
+
+    .container {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 8px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: #666;
+      margin-bottom: 24px;
+    }
+
+    button {
+      width: 100%;
+      padding: 16px;
+      font-size: 18px;
+      font-weight: bold;
+      border: none;
+      border-radius: 10px;
+      background: #1976d2;
+      color: white;
+      cursor: pointer;
+      margin-bottom: 20px;
+    }
+
+    button:disabled {
+      background: #999;
+      cursor: not-allowed;
+    }
+
+    #status {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #555;
+    }
+
+    .hospital {
+      background: white;
+      padding: 16px;
+      margin-bottom: 12px;
+      border-radius: 10px;
+      border: 1px solid #ddd;
+    }
+
+    .hospital-number {
+      font-size: 14px;
+      color: #777;
+      margin-bottom: 4px;
+    }
+
+    .hospital-name {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .hospital-distance {
+      font-size: 28px;
+      font-weight: bold;
+      margin-top: 8px;
+    }
+
+    .hospital-distance span {
+      font-size: 16px;
+      font-weight: normal;
+      color: #666;
+    }
+
+    .accuracy {
+      text-align: center;
+      margin-top: 20px;
+      font-size: 13px;
+      color: #777;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <h1>Nearest Hospitals</h1>
+
+    <div class="subtitle">
+      Straight-line distance from current location
+    </div>
+
+    <button id="locationButton">
+      Use Current Location
+    </button>
+
+    <div id="status">
+      Press the button to find nearby hospitals.
+    </div>
+
+    <div id="results"></div>
+
+    <div id="accuracy" class="accuracy"></div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

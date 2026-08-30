@@ -1,0 +1,10 @@
+{
+  "name": "Hospital Distance",
+  "short_name": "Hospitals",
+  "description": "Find nearby hospitals by straight-line distance from your current location.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#1976d2",
+  "orientation": "portrait"
+}

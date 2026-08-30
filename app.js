@@ -7,43 +7,53 @@
 const hospitals = [
   {
     name: "Royal Adelaide Hospital",
-    lat: -34.9205,
-    lon: 138.5871
-  },
-  {
-    name: "Flinders Medical Centre",
-    lat: -35.0214,
-    lon: 138.5687
+    lat: -34.92061,
+    lon: 138.58618
   },
   {
     name: "The Queen Elizabeth Hospital",
-    lat: -34.8838,
-    lon: 138.5330
+    lat: -34.88384,
+    lon: 138.53364
   },
   {
-    name: "Lyell McEwin Hospital",
-    lat: -34.7497,
-    lon: 138.6632
-  },
-  {
-    name: "Modbury Hospital",
-    lat: -34.8337,
-    lon: 138.6921
+    name: "Flinders Medical Centre",
+    lat: -35.02158,
+    lon: 138.56925
   },
   {
     name: "Noarlunga Hospital",
-    lat: -35.1427,
-    lon: 138.4971
+    lat: -35.14032,
+    lon: 138.50073
+  },
+  {
+    name: "Lyell McEwin Hospital",
+    lat: -34.74781,
+    lon: 138.66511
+  },
+  {
+    name: "Modbury Hospital",
+    lat: -34.83420,
+    lon: 138.69051
+  },
+  {
+    name: "Women's and Children's Hospital",
+    lat: -34.91152,
+    lon: 138.60001
   },
   {
     name: "Mount Barker District Soldiers' Memorial Hospital",
-    lat: -35.0645,
-    lon: 138.8587
+    lat: -35.08213,
+    lon: 138.87012
   },
   {
-    name: "South Coast District Hospital",
-    lat: -35.5565,
-    lon: 138.6214
+    name: "Murray Bridge Soldiers' Memorial Hospital",
+    lat: -35.12860,
+    lon: 139.27916
+  },
+  {
+    name: "South Coast District Hospital - Victor Harbor",
+    lat: -35.56147,
+    lon: 138.60681
   }
 ];
 

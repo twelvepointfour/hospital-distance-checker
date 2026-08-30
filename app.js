@@ -216,7 +216,7 @@ async function calculateRoadDistances(userLat, userLon) {
     )
 
     // Only send the nearest 3 to Google
-    .slice(0, 3);
+    .slice(0, 5);
 
 
   // Send current location + 3 destinations to Cloudflare
@@ -369,7 +369,7 @@ function displayStraightLineFallback(
         a.distance - b.distance
     )
 
-    .slice(0, 3);
+    .slice(0, 5);
 
 
   resultsElement.innerHTML = "";
